@@ -229,25 +229,21 @@ class Flog < SexpProcessor
   # Flog the given files or directories. Smart. Deals with "-", syntax
   # errors, and traversing subdirectories intelligently.
 
-  def flog(*files_or_dirs)
-    files = Flog.expand_dirs_to_files(*files_or_dirs)
-
-    files.each do |file|
+  def flog(*snippets)
+    snippets.each do |snippet|
       begin
         # TODO: replace File.open to deal with "-"
-        ruby = file == '-' ? $stdin.read : File.read(file)
-        warn "** flogging #{file}" if option[:verbose]
-
-        ast = @parser.process(ruby, file)
+        warn "** flogging #{snippet}" if option[:verbose]
+        ast = @parser.process(snippet, "-")
         next unless ast
-        mass[file] = ast.mass
+        mass[snippet] = ast.mass
         process ast
       rescue RegexpError, SyntaxError, Racc::ParseError => e
-        if e.inspect =~ /<%|%>/ or ruby =~ /<%|%>/ then
+        if e.inspect =~ /<%|%>/ or snippet =~ /<%|%>/ then
           warn "#{e.inspect} at #{e.backtrace.first(5).join(', ')}"
           warn "\n...stupid lemmings and their bad erb templates... skipping"
         else
-          warn "ERROR: parsing ruby file #{file}"
+          warn "ERROR: parsing ruby file #{snippet}"
           unless option[:continue] then
             warn "ERROR! Aborting. You may want to run with --continue."
             raise e
